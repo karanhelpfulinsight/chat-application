@@ -43,6 +43,29 @@ const sendMessage = async (req, res) => {
         })
     }
 }
+
+const senderMessage = async (data) => {
+        const { content, sender, chat, receiverId,
+            isReceiverInsideChatRoom, } = data;
+
+        const currentChat = await Chat.findById({ _id: chat });
+        const message = await Message.create({
+            sender, chat, content, readBy: []
+        })
+
+        if (isReceiverInsideChatRoom) {
+            message.readBy = [{
+                user: receiverId,
+                seenAt: new Date()
+            }]
+
+            await message.save();
+
+        }
+        currentChat.latestMessage = message;
+        await currentChat.save();
+        return message
+}
 const allMessages = async (req, res) => {
     try {
         const messages = await Message.find({ chat: req.params.chatId })
