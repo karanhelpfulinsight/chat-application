@@ -3,11 +3,11 @@ const { loginUser, registerUser, getAllUser, getOnlineStatus } = require('../con
 const { authenticateUser } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
-
+router.route("/").post(registerUser);
 router.route("/all").get(authenticateUser,getAllUser);
 
 router.route("/login").post(loginUser);
 router.route("/status/:userId").get(getOnlineStatus)
-router.route("/").post(registerUser);
+
 
 module.exports = router;
