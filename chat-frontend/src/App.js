@@ -10,8 +10,7 @@ function App() {
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignupForm />} />
-      <Route path="/home" element={<Home/>}/>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Home/>}/>
     </Routes>
   );
 }

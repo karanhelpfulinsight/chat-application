@@ -70,5 +70,7 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
 
 
-make whatsapp web page ui, with dynamic data like, the chat list, serch option, when I click the chat it open that chat
-and show chats of that person, same like whatsapp functionality, use react jsx and javascript and for tailwind, do normal design for that, with dynamic data, normal html tag
+
+
+
+

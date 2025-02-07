@@ -1,4 +1,5 @@
 const Chat = require("../models/chatModel")
+const User = require("../models/userModel")
 
 const accessChat = async (req, res) => {
     const {userId} = req.params;
@@ -7,7 +8,6 @@ const accessChat = async (req, res) => {
     }
 
     var isChat = await Chat.find({
-        isGroupChat: false,
         $and: [
           { users: { $elemMatch: { $eq: req.user._id } } },
           { users: { $elemMatch: { $eq: userId } } },
@@ -28,8 +28,9 @@ const accessChat = async (req, res) => {
             data: isChat[0],
         })
       } else {
+       
         var chatData = {
-            chatName: "sender",
+            name: "sender",
             isGroupChat: false,
             users: [req.user._id, userId],
         };
@@ -48,14 +49,39 @@ const accessChat = async (req, res) => {
             
           }
       }
-    
+}
+
+const accessChatById = async(req, res) => {
+  try {
+    const {chatId} = req.params;
+
+    const chat = await Chat.findById(chatId).populate("users", "-password");
+    if(!chat) {
+      return res.status(404).json({
+        message: "Chat not found",
+        data: {},
+      })
+    }
+
+    return res.status(200).json({
+      message: "Chat found successfully",
+      data: chat,
+    })
+
+  }catch(err) {
+    return res.status(500).json({
+      message: "Failed to access chat",
+      data: {},
+      error: err.message,
+    })
+  }
 }
 
 const fetchAllChat = async (req, res) => {
+  console.log("fetch all chat")
     try {
         let chats = await Chat.find({ users: { $elemMatch: { $eq: req.user._id } } })
             .populate("users", "-password")
-            .populate("groupAdmin", "-password")
             .populate({
                 path: "latestMessage",
                 populate: {
@@ -80,4 +106,4 @@ const fetchAllChat = async (req, res) => {
 }
 
 
-module.exports = {accessChat, fetchAllChat}
+module.exports = {accessChat, fetchAllChat, accessChatById}

@@ -23,7 +23,7 @@ const Login = () => {
         try {
           const {data} = await api.post('/user/login', obj);
           sessionStorage.setItem("user", JSON.stringify(data.data));
-          navigate("/home")
+          navigate("/")
         }catch(error) {
           console.log(error)
         }

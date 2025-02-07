@@ -55,7 +55,7 @@ const loginUser = async (req, res) => {
             })
         }
 
-        const token = jwt.sign({_id: user._id}, 'karan', { expiresIn: '1h' });
+        const token = jwt.sign({_id: user._id}, 'karan', { expiresIn: '1d' });
 
         res.cookie("authToken", token, {
             httpOnly: true,
@@ -96,6 +96,30 @@ const getOnlineStatus = async (req, res) => {
       res.status(500).json({message: error.message, data: {}});
     }
   };
+
+const getUserBySearch = async (req, res) => {
+    try {
+        const { query } = req.query;
+        const userId = req.user._id;
+    
+        if (!query) {
+          return res.status(400).json({ message: "Query parameter is required", data: [] });
+        }
+        const users = await User.find({
+            $or: [
+              { name: { $regex: query, $options: "i" } },
+              { email: { $regex: query, $options: "i" } }
+            ],
+            _id: { $ne: userId }
+          });
+
+
+        return res.status(200).json({ message: 'Users retrieved successfully', data: users });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Server Error', data: [] });
+    }
+}
   
 
-module.exports = {getAllUser, registerUser, loginUser, getOnlineStatus}
+module.exports = {getAllUser, registerUser, loginUser, getOnlineStatus, getUserBySearch}

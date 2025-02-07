@@ -9,7 +9,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // No need to manually set cookies in headers - axios will handle this
-    console.log('Request:', config);
+    
     return config;
   },
   (error) => {
@@ -21,17 +21,15 @@ api.interceptors.request.use(
 // Response Interceptor
 api.interceptors.response.use(
   (response) => {
-    console.log('Response:', response);
     return response;
   },
   (error) => {
-    console.error('Response Error:', error.response || error);
 
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // Handle unauthorized
-          console.error('Unauthorized, please login!');
+          sessionStorage.removeItem("user"); // Clear user session
+          window.location.href = "/login"; // Redirect to login page
           break;
         case 403:
           // Handle forbidden
