@@ -5,23 +5,24 @@ export default function ChatWindow({ selectedChat, messages, onSendMessage, isTy
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  console.log(isTyping, "when typ")
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isTyping]);
 
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      onTyping(false);
+      if (selectedChat?._id) {
+        onTyping(false);
+      }
     };
   }, [selectedChat]);
 
   const handleSendMessage = () => {
-    if (messageText.trim() === "") return;
+    if (messageText.trim() === "" || !selectedChat?._id) return;
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -35,6 +36,7 @@ export default function ChatWindow({ selectedChat, messages, onSendMessage, isTy
   const handleInputChange = (e) => {
     const newText = e.target.value;
     setMessageText(newText);
+    if (!selectedChat?._id) return;
   
     if (newText.trim() === "") {
       onTyping(false);
@@ -49,9 +51,8 @@ export default function ChatWindow({ selectedChat, messages, onSendMessage, isTy
   
     typingTimeoutRef.current = setTimeout(() => {
       onTyping(false);
-    }, 3000);
+    }, 5000);
   };
-  
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -62,60 +63,77 @@ export default function ChatWindow({ selectedChat, messages, onSendMessage, isTy
 
   if (!selectedChat) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-100">
-        <p className="text-xl text-gray-500">Select a chat to start messaging</p>
+      <div className="flex-1 flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Select a chat to start messaging</p>
       </div>
     );
   }
 
-  return (
-    <div className="flex-1 flex flex-col">
-      <div className="bg-gray-200 p-4 flex items-center">
-        <div className="w-10 h-10 bg-gray-300 rounded-full mr-4"></div>
-        <div className="flex flex-col">
-          <h2 className="font-semibold">
-            {selectedChat?.users.find((item) => item._id !== user?._id)?.name}
-          </h2>
+  console.log(selectedChat, "chatWindow")
+  const otherUser = selectedChat?.users?.find(u => u._id !== user?._id);
 
-          {isTyping && <span className="text-sm text-gray-500">typing...</span>}
+  return (
+    <div className="flex-1 flex flex-col bg-white">
+      <div className="border-b p-4 flex items-center">
+        {
+          otherUser?.name && <div className="w-8 h-8 bg-gray-300 rounded-full mr-2"></div>
+        }
+        
+        <div className="flex items-center space-x-2">
+          <span className="font-medium">{otherUser?.name}</span>
+          {isTyping && (
+          <span className="text-sm text-gray-500 ml-2">typing...</span>
+        )}
         </div>
+        
       </div>
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message, index) => (
-          <div 
-            key={message._id || `temp-${index}`} 
-            className={`mb-4 ${
-              message.sender._id === user?._id ? "text-right" : "text-left"
+          <div
+            key={message._id || index}
+            className={`flex ${
+              message.sender._id === user?._id ? "justify-end" : "justify-start"
             }`}
           >
             <div
-              className={`inline-block p-2 rounded-lg ${
-                message.sender._id === user?._id 
-                  ? "bg-green-200 text-green-900" 
-                  : "bg-white text-gray-900"
+              className={`max-w-[70%] rounded-lg p-3 ${
+                message.sender._id === user?._id
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100"
               }`}
             >
               <p>{message.content}</p>
             </div>
           </div>
         ))}
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 rounded-lg p-3">
+              <p className="text-gray-500">typing...</p>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
-      <div className="bg-gray-200 p-4 flex items-center">
-        <input
-          type="text"
-          value={messageText}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyPress}
-          placeholder="Type a message..."
-          className="flex-1 p-2 border rounded mr-2"
-        />
-        <button
-          onClick={handleSendMessage}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-        >
-          Send
-        </button>
+
+      <div className="border-t p-4">
+        <div className="flex space-x-2">
+          <textarea
+            value={messageText}
+            onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
+            placeholder="Type a message..."
+            className="flex-1 resize-none rounded-lg border p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows={1}
+          />
+          <button
+            onClick={handleSendMessage}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Send
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -6,14 +6,8 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     role: { type: String, enum: ['coach', 'client'], default: 'client' },
-    isOnline: {
-        type: Boolean,
-        default: false,
-    },
-    lastSeen: {
-        type: Date,
-        default: Date.now,
-    },
+    isOnline: { type: Boolean, default: false },
+  lastSeen: { type: Date }
 
 }, { timeStamps: true })
 

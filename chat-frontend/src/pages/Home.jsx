@@ -1,16 +1,17 @@
-"use client"
-
 import { useCallback, useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { debounce } from "lodash"
 import api from "../axios/api"
+import socket from "../socket"
+import { setSelectedChat } from "../redux/slices/chatSlice"
 import Sidebar from "../components/SideBar"
 import ChatWindow from "../components/ChatWindow"
-import { debounce } from "lodash"
-import socket from "../socket"
 
 export default function WhatsAppClone() {
+  const dispatch = useDispatch();
+  const { selectedChat } = useSelector((state) => state.chat)
   const [chatData, setChatData] = useState([])
   const [selectedChatId, setSelectedChatId] = useState(null)
-  const [selectedChat, setSelectedChat] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [messages, setMessages] = useState([])
   const [isTyping, setIsTyping] = useState(false)
@@ -44,31 +45,58 @@ export default function WhatsAppClone() {
 
   useEffect(() => {
     if (!socket.connected) {
-      socket.connect()
+      socket.connect();
     }
 
     socket.on("connect", () => {
-      console.log("Connected to socket server with ID:", socket.id)
-    })
+      console.log("Connected to socket server with ID:", socket.id);
+    });
 
     socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error)
-    })
+      console.error("Socket connection error:", error);
+    });
 
-    socket.on("disconnect", () => {
-      console.log("Disconnected from socket server")
-    })
+    socket.on("user-status-change", ({ userId, isOnline, lastSeen }) => {
+      setChatData(prev => prev.map(chat => {
+        if (chat._id === userId) {
+          return { ...chat, isOnline, lastSeen };
+        }
+        return chat;
+      }));
+      
+      console.log({
+        ...selectedChat,
+        users: selectedChat?.users?.map(u => {
+          if (u._id === userId) {
+            return { ...u, isOnline, lastSeen };
+          }
+          return u;
+        })
+      }, selectedChat, "onUpdate")
+      if (selectedChat.users) {
+       
+        dispatch(setSelectedChat({
+          ...selectedChat,
+          users: selectedChat?.users?.map(u => {
+            if (u._id === userId) {
+              return { ...u, isOnline, lastSeen };
+            }
+            return u;
+          })
+        }));
+      }
+    });
 
     if (user) {
-      socket.emit("setup", user._id)
+      socket.emit("setup", user._id);
     }
 
     return () => {
-      socket.off("connect")
-      socket.off("connect_error")
-      socket.off("disconnect")
-      socket.disconnect()
-    }
+      socket.off("connect");
+      socket.off("connect_error");
+      socket.off("user-status-change");
+      socket.disconnect();
+    };
   }, [])
 
   useEffect(() => {
@@ -86,7 +114,7 @@ export default function WhatsAppClone() {
         } else {
           res = await api.get(`chat/${selectedChatId}`)
         }
-        setSelectedChat(res?.data?.data)
+        dispatch(setSelectedChat(res?.data?.data))
         if (res?.data?.data?._id) {
           socket.emit("join-chat", {
             chatId: res.data.data._id,
@@ -118,13 +146,13 @@ export default function WhatsAppClone() {
       }
     }
 
-    if (selectedChat) {
+    if (selectedChat?._id) {
       fetchAllMessages()
     }
   }, [selectedChat])
 
   const sendMessage = (messageText) => {
-    if (messageText.trim() === "" || !selectedChatId) return
+    if (messageText.trim() === "" || !selectedChat?._id) return
 
     const messageData = {
       chat: selectedChat._id,
@@ -133,21 +161,17 @@ export default function WhatsAppClone() {
     }
 
     socket.emit("send-message", messageData)
-
   }
 
   const handleTyping = (isTyping) => {
-    if (!selectedChat) return;
-  
-    setIsTyping(isTyping);
-  
+    if (!selectedChat?._id) return;
+
     socket.emit(isTyping ? "typing" : "stop-typing", {
-      chat: selectedChat?._id,
-      userId: user?._id
+      chat: selectedChat._id,
+      userId: user._id
     });
   };
-  
-  
+
   useEffect(() => {
     socket.on("receive-message", (message) => {
       setMessages((prevMessages) => {
@@ -163,26 +187,28 @@ export default function WhatsAppClone() {
     })
 
     socket.on("typing", (data) => {
-
-      console.log("typing", data.chat, selectedChat)
-      if (data.chat === selectedChat?._id) {
+      if (data.chat === selectedChat?._id && data.userId !== user._id) {
         setIsTyping(true);
       }
     });
   
     socket.on("stop-typing", (data) => {
-      if (data.chat === selectedChat?._id) {
+      if (data.chat === selectedChat?._id && data.userId !== user._id) {
         setIsTyping(false);
       }
     });
+
     return () => {
       socket.off("receive-message")
       socket.off("typing");
       socket.off("stop-typing");
     }
-  }, [user?._id])
+  }, [selectedChat])
 
-  console.log(selectedChat, "selected chat")
+  
+  useEffect(() => {
+    console.log(selectedChat, isTyping, "typeing....")
+  },[isTyping])
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -193,7 +219,7 @@ export default function WhatsAppClone() {
         onSearchChange={setSearchTerm}
       />
       <ChatWindow
-        selectedChat={selectedChatId ? selectedChat : null}
+        selectedChat={selectedChat}
         messages={messages}
         onSendMessage={sendMessage}
         isTyping={isTyping}
